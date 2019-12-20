@@ -67,10 +67,8 @@ func (s *User) Login(user, pass string) error {
 		return errors.New("Missing some params ")
 	}
 
-	//urlquery := "https://cas.hdu.edu.cn/cas/login?state=&service=https%3A%2F%2Fskl.hdu.edu.cn%2Fapi%2Fcas%2Flogin%3Findex%3D"
-	//urlquery := "http://116.62.36.144/"
 	s.app.Post(url)
-	s.app.Type("form") //s.app.Set("Content-Type", "application/x-www-form-urlencoded")
+	s.app.Type("form")
 
 	s.app.Send(map[string]string{
 		"rsa":       encStr(user, pass, lt[1]), //this encStr is very slow...
