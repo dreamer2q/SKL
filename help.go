@@ -94,7 +94,7 @@ func getDataRange(r DateRange) (string, string) {
 		from = curr.AddDate(0, -1, 0)
 		to = curr
 	case HalfYear:
-		from = curr.AddDate(0, 6, 0)
+		from = curr.AddDate(0, -6, 0)
 		to = curr
 	}
 	format := "2006-01-02"
@@ -110,6 +110,7 @@ func GetCheckStatus(key string) string {
 		"1": "假",
 	}[key]
 }
+
 func GetUpdateMode(key string) string {
 	return map[string]string{
 		"0": "签到码",
