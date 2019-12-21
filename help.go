@@ -100,3 +100,19 @@ func getDataRange(r DateRange) (string, string) {
 	format := "2006-01-02"
 	return from.Format(format), to.Format(format)
 }
+
+func GetCheckStatus(key string) string {
+	return map[string]string{
+		"3": "到",
+		"0": "旷",
+		"2": "迟",
+		"4": "早",
+		"1": "假",
+	}[key]
+}
+func GetUpdateMode(key string) string {
+	return map[string]string{
+		"0": "签到码",
+		"1": "手动点名",
+	}[key]
+}
