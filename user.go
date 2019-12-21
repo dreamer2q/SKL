@@ -32,6 +32,10 @@ type User struct {
 	app   *gorequest.SuperAgent
 }
 
+var (
+	recCaptchaUrl = "http://localhost:5000/captcha"
+)
+
 //get a *User with empty params, login is required to continue next operations.
 func NewUser(id, group string) *User {
 	return &User{
@@ -174,8 +178,8 @@ func (s *User) CheckCode(code string, maxRetry int) error {
 }
 
 func (s *User) recCaptcha(img string) (string, error) {
-	url := "http://localhost:5001/captcha"
-	req := gorequest.New().Post(url)
+
+	req := gorequest.New().Post(recCaptchaUrl)
 	req.Type("form")
 	data := map[string]string{
 		"data": img,
@@ -211,4 +215,47 @@ func (s *User) validCode(code string) error {
 		return errors.New(fmt.Sprintf("%d", resp.StatusCode))
 	}
 	return nil
+}
+
+func RegisterUrl(url string) {
+	recCaptchaUrl = url
+}
+
+func (s *User) SKLStatus(d DateRange) (*SKLCheckData, error) {
+	from, to := getDataRange(d)
+	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/stat/stu/user?startDate=%s&endDate=%s", from, to)
+	fmt.Println(url)
+
+	resp, body, _ := s.get(url)
+	if resp == nil || resp.StatusCode != 200 {
+		return nil, errors.New("get response error")
+	}
+	if body == "[]" { //没有数据
+		return nil, nil
+	}
+	ret := &SKLCheckData{}
+	err := json.Unmarshal([]byte(body), ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (s *User) SKLCheckList(r DateRange) (*SKLCheckListStruct, error) {
+	from, to := getDataRange(r)
+	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/check-in-student-detail/my?startDate=%s&endDate=%s", from, to)
+
+	resp, body, _ := s.get(url)
+	if resp == nil || resp.StatusCode != 200 {
+		return nil, errors.New("get response error")
+	}
+	if body == "[]" { //没有数据
+		return nil, nil
+	}
+	ret := &SKLCheckListStruct{}
+	err := json.Unmarshal([]byte(body), ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }

@@ -6,9 +6,20 @@ import (
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 var js *otto.Otto
+
+type DateRange int
+
+const (
+	Today DateRange = iota
+	ThisWeek
+	LastWeek
+	ThisMonth
+	HalfYear
+)
 
 func init() {
 	desUrl := "http://cas.hdu.edu.cn/cas/comm/js/des.js"
@@ -55,4 +66,37 @@ func encStr(user, pass, lt string) string {
 	fmt.Printf("%v\n", ret)
 
 	return fmt.Sprintf("%v", ret)
+}
+
+func wton(w time.Weekday) (t int) {
+	t = int(w)
+	t = (t + 6) % 7
+	return
+}
+
+func getDataRange(r DateRange) (string, string) {
+	curr := time.Now()
+	var from, to time.Time
+	switch r {
+	case Today:
+		from = curr
+		to = curr
+	case ThisWeek:
+		w := wton(curr.Weekday())
+		from = curr.AddDate(0, 0, -w)
+		to = curr.AddDate(0, 0, 6-w)
+	case LastWeek:
+		w := wton(curr.Weekday())
+		curr = curr.AddDate(0, 0, -7)
+		from = curr.AddDate(0, 0, -w)
+		to = curr.AddDate(0, 0, 6-w)
+	case ThisMonth:
+		from = curr.AddDate(0, -1, 0)
+		to = curr
+	case HalfYear:
+		from = curr.AddDate(0, 6, 0)
+		to = curr
+	}
+	format := "2006-01-02"
+	return from.Format(format), to.Format(format)
 }
