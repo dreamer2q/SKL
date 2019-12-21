@@ -1,6 +1,8 @@
 package skl
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/parnurzeal/gorequest"
 	"github.com/robertkrimen/otto"
@@ -58,14 +60,26 @@ func exist(filepath string) bool {
 }
 
 func encStr(user, pass, lt string) string {
-
 	ret, err := js.Call("strEnc", nil, user+pass+lt, "1", "2", "3")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%v\n", ret)
-
 	return fmt.Sprintf("%v", ret)
+}
+
+func encStr_i(user, pass, lt string) (string, error) {
+	//this `url` is only used for testing purpose, do not use it in production mode
+	url := "https://1816601809935473.cn-hangzhou.fc.aliyuncs.com/2016-08-15/proxy/hdu/strenc/"
+	req := gorequest.New()
+	req.Post(url)
+	date := base64.StdEncoding.EncodeToString([]byte(user + pass + lt))
+	req.Type("text")
+	req.Send(date)
+	resp, body, _ := req.End()
+	if resp == nil || resp.StatusCode != 200 {
+		return "", errors.New("resp error")
+	}
+	return body, nil
 }
 
 func wton(w time.Weekday) (t int) {

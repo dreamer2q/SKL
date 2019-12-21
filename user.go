@@ -74,8 +74,12 @@ func (s *User) Login(user, pass string) error {
 	s.app.Post(url)
 	s.app.Type("form")
 
+	rsa, err := encStr_i(user, pass, lt[1])
+	if err != nil {
+		rsa = encStr(user, pass, lt[1]) //this method is very slow...
+	}
 	s.app.Send(map[string]string{
-		"rsa":       encStr(user, pass, lt[1]), //this encStr is very slow...
+		"rsa":       rsa,
 		"ul":        fmt.Sprintf("%d", len(user)),
 		"pl":        fmt.Sprintf("%d", len(pass)),
 		"lt":        lt[1],
