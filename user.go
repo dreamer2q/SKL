@@ -259,3 +259,23 @@ func (s *User) SKLCheckList(r DateRange) (*SKLCheckListStruct, error) {
 	}
 	return ret, nil
 }
+
+func (s *User) SKLComment(mark string) error {
+	url := "https://skl.hdu.edu.cn/api/teacher-mark/save"
+	req := gorequest.New()
+	req.Post(url)
+	req.Set("X-Auth-Token", s.Token).
+		Set("User-Agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Mobile Safari/537.36").
+		Type("json")
+	req.Send(&map[string]interface{}{
+		"totalMark": 5,
+		"mark1":     5,
+		"mark2":     5,
+		"comments":  mark,
+	})
+	resp, _, _ := req.End()
+	if resp == nil || resp.StatusCode != 200 {
+		return errors.New("Comments failed")
+	}
+	return nil
+}
