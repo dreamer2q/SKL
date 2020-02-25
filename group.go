@@ -30,7 +30,8 @@ func (g *Group) Update() error {
 	return DB.Model(&Group{}).Save(g).Error
 }
 
-func GetGroup(groupId int64) (g *Group) {
-	DB.Preload("Users").Find(g, groupId)
-	return
+func GetGroup(groupId int64) *Group {
+	g := &Group{}
+	DB.Preload("Users").First(g, groupId)
+	return g
 }

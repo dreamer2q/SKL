@@ -24,7 +24,8 @@ func (u *User) AddGroup(g *Group) *User {
 	return u
 }
 
-func GetUser(userId int64) (u *User) {
-	DB.Preload("Groups").Find(u, userId)
-	return
+func GetUser(userId int64) *User {
+	u := &User{}
+	DB.Preload("Groups").First(u, userId)
+	return u
 }
