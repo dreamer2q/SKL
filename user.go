@@ -23,3 +23,8 @@ func (u *User) AddGroup(g *Group) *User {
 	u.Groups = append(u.Groups, g)
 	return u
 }
+
+func GetUser(userId int64) (u *User) {
+	DB.Preload("Groups").Find(u, userId)
+	return
+}
