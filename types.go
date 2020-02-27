@@ -1,29 +1,5 @@
 package skl
 
-import "time"
-
-type User struct {
-	QQ        int64 `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserInfo
-
-	Token  string
-	Groups []*Group `gorm:"many2many:user_groups;"`
-}
-
-type Group struct {
-	GroupID    int64 `gorm:"primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	CourseName string
-	//CourseID    string
-	TeacherName string
-	TeacherID   int64
-
-	Users []*User `gorm:"many2many:user_groups;"`
-}
-
 type codeError struct {
 	statusCode int //400,验证码不正确;401,签到码无效;200,签到成功
 }
@@ -52,7 +28,7 @@ type UserInfo struct {
 	//RoleList interface{} `json:"roleList"`
 }
 
-type SKLCheckData []struct {
+type CheckData []struct {
 	UserID   string `json:"userId"`
 	Name     string `json:"name"`
 	UnitName string `json:"unitName"`
@@ -65,7 +41,7 @@ type SKLCheckData []struct {
 	AbsentTimeCount  float64 `json:"absentTimeCount"`
 }
 
-type SKLCheckListStruct []struct {
+type CheckListData []struct {
 	CourseSchemaID      string `json:"courseSchemaId"`
 	StudentID           string `json:"studentId"`
 	StudentName         string `json:"studentName"`

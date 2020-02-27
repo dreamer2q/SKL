@@ -10,19 +10,14 @@ import (
 
 var recCaptchaUrl = "http://localhost:5000/captcha"
 
-func RegisterUrl(url string) {
-	recCaptchaUrl = url
+func (u *User) TokenValid() error {
+	return u.LoadInfo()
 }
 
-//isTokenValid
-func (s *User) TokenValid() error {
-	return s.LoadInfo()
-}
-
-func (s *User) LoadInfo() error {
+func (u *User) LoadInfo() error {
 
 	url := "https://skl.hdu.edu.cn/api/userinfo"
-	resp, body, err := s.get(url)
+	resp, body, err := u.get(url)
 	if resp == nil || resp.StatusCode != 200 {
 		return fmt.Errorf("loadInfo: %v", err)
 	}
@@ -31,15 +26,18 @@ func (s *User) LoadInfo() error {
 	if err != nil {
 		return err
 	}
-
-	s.UserInfo = *userInfo
+	u.UserID = userInfo.UserID
 	return nil
 }
 
-func (s *User) get(url string) (gorequest.Response, string, error) {
-	req := app.Get(url)
+func (u *User) get(url string) (gorequest.Response, string, error) {
+	if u.Token == "" {
+		return nil, "", fmt.Errorf("get: token is empty")
+	}
+
+	req := gorequest.New().Get(url)
 	req.Set("User-Agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Mobile Safari/537.36")
-	req.Set("X-Auth-Token", s.Token)
+	req.Set("X-Auth-Token", u.Token)
 	req.Set("Origin", "https://skl.hduhelp.com")
 	req.Set("Referer", "https://skl.hdu.edu.cn/")
 
@@ -47,21 +45,26 @@ func (s *User) get(url string) (gorequest.Response, string, error) {
 	return resp, body, fmt.Errorf("%v", errs)
 }
 
-func (s *User) CheckCode(code string, maxRetry int) error {
+func (u *User) CheckCode(code string, maxRetry int) error {
 
 	for i := 0; i < maxRetry; i++ {
 		url := fmt.Sprintf("https://skl.hdu.edu.cn/api/checkIn/code-check-in?code=%s", code)
-		resp, body, err := s.get(url)
+		resp, body, err := u.get(url)
+		if resp == nil || resp.StatusCode != 200 {
+			return err
+		}
+		url2 := "https://skl.hdu.edu.cn/api/checkIn/create-code-img"
+		resp, body, err = u.get(url2)
 		if resp == nil || resp.StatusCode != 200 {
 			return err
 		}
 
 		b6Img := base64.StdEncoding.EncodeToString([]byte(body))
-		retCode, err := s.recCaptcha(string(b6Img))
+		retCode, err := u.recCaptcha(string(b6Img))
 		if err != nil {
 			return err
 		}
-		err = s.validCode(retCode)
+		err = u.validCode(retCode)
 		if err == nil {
 			return nil
 		}
@@ -73,10 +76,10 @@ func (s *User) CheckCode(code string, maxRetry int) error {
 		}
 		return err
 	}
-	return errors.New("reach the max retry times")
+	return errors.New("checkCode: reach the max retry times")
 }
 
-func (s *User) recCaptcha(img string) (string, error) {
+func (u *User) recCaptcha(img string) (string, error) {
 
 	req := gorequest.New().Post(recCaptchaUrl)
 	req.Type("form")
@@ -103,9 +106,9 @@ func (s *User) recCaptcha(img string) (string, error) {
 	return ret.Data, nil
 }
 
-func (s *User) validCode(code string) error {
-	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/checkIn/valid-code?code=%s", code)
-	resp, _, err := s.get(url)
+func (u *User) validCode(code string) error {
+	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/checkIn/valid-code?code=%u", code)
+	resp, _, err := u.get(url)
 	if resp == nil {
 		return err
 	}
@@ -115,18 +118,18 @@ func (s *User) validCode(code string) error {
 	return nil
 }
 
-func (s *User) SKLStatus(d DateRange) (*SKLCheckData, error) {
+func (u *User) Status(d DateRange) (*CheckData, error) {
 	from, to := getDataRange(d)
-	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/stat/stu/user?startDate=%s&endDate=%s", from, to)
+	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/stat/stu/user?startDate=%u&endDate=%u", from, to)
 
-	resp, body, err := s.get(url)
+	resp, body, err := u.get(url)
 	if resp == nil || resp.StatusCode != 200 {
 		return nil, err
 	}
 	if body == "[]" { //没有数据
 		return nil, nil
 	}
-	ret := &SKLCheckData{}
+	ret := &CheckData{}
 	err = json.Unmarshal([]byte(body), ret)
 	if err != nil {
 		return nil, err
@@ -134,18 +137,18 @@ func (s *User) SKLStatus(d DateRange) (*SKLCheckData, error) {
 	return ret, nil
 }
 
-func (s *User) SKLCheckList(r DateRange) (*SKLCheckListStruct, error) {
+func (u *User) CheckList(r DateRange) (*CheckListData, error) {
 	from, to := getDataRange(r)
-	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/check-in-student-detail/my?startDate=%s&endDate=%s", from, to)
+	url := fmt.Sprintf("https://skl.hdu.edu.cn/api/check-in-student-detail/my?startDate=%u&endDate=%u", from, to)
 
-	resp, body, err := s.get(url)
+	resp, body, err := u.get(url)
 	if resp == nil || resp.StatusCode != 200 {
 		return nil, err
 	}
 	if body == "[]" { //没有数据
 		return nil, nil
 	}
-	ret := &SKLCheckListStruct{}
+	ret := &CheckListData{}
 	err = json.Unmarshal([]byte(body), ret)
 	if err != nil {
 		return nil, err
@@ -153,11 +156,11 @@ func (s *User) SKLCheckList(r DateRange) (*SKLCheckListStruct, error) {
 	return ret, nil
 }
 
-func (s *User) SKLComment(mark string) error {
+func (u *User) Comment(mark string) error {
 	url := "https://skl.hdu.edu.cn/api/teacher-mark/save"
 	req := gorequest.New()
 	req.Post(url)
-	req.Set("X-Auth-Token", s.Token).
+	req.Set("X-Auth-Token", u.Token).
 		Set("User-Agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Mobile Safari/537.36").
 		Type("json")
 	req.Send(&map[string]interface{}{
@@ -171,4 +174,18 @@ func (s *User) SKLComment(mark string) error {
 		return fmt.Errorf("comment error: %v", err)
 	}
 	return nil
+}
+
+func (u *User) Info() (*UserInfo, error) {
+	url := "https://skl.hdu.edu.cn/api/userinfo"
+	resp, body, err := u.get(url)
+	if resp == nil || resp.StatusCode != 200 {
+		return nil, fmt.Errorf("info: %v", err)
+	}
+	userInfo := &UserInfo{}
+	err = json.Unmarshal([]byte(body), userInfo)
+	if err != nil {
+		return nil, err
+	}
+	return userInfo, nil
 }
